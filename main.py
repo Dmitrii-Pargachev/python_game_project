@@ -56,13 +56,27 @@ class GameWindow:
 
     def run(self):
         running = True
+        font = pygame.font.Font(None, 36)
+        clock = pygame.time.Clock()
+        timer_started = False
+        current_time = 0
         while running:
             self.game_window.fill(WHITE)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if not timer_started:
+                        pygame.time.set_timer(pygame.USEREVENT, 1000)  # Запуск таймера с интервалом в 1 секунду
+                        timer_started = True
+                elif event.type == pygame.USEREVENT:
+                    current_time += 1
             # код игры
+
+            text_surface = font.render(f"Время: {current_time} сек", True, BLACK)
+            self.game_window.blit(text_surface, (600, 20))
             pygame.display.flip()
+            clock.tick(60)
 
 
 class GameWindow1(GameWindow):
