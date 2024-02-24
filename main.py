@@ -1,13 +1,9 @@
 import pygame
-import sys
+
 
 pygame.init()
 
-# размеры окна
-WINDOW_WIDTH = 800
-WINDOW_HEIGHT = 600
-
-# цветовая палитра для удобства в написании кода
+# цветовая палитра для удобства в коде
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 GREY = (128, 128, 128)
@@ -16,96 +12,74 @@ RED = (255, 78, 21)
 GREEN = (77, 255, 77)
 
 
-# основное окно
-main_window = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-pygame.display.set_caption("Сапёр")
+class MainWindow:
+    def __init__(self):
+        self.main_window = pygame.display.set_mode((800, 600))
+        pygame.display.set_caption("Сапёр")
+        self.background_image = pygame.image.load("images/background.jpg").convert()
+
+    def display_menu(self):
+        running = True
+        while running: # открытие одного из 3-её уровней через нажатие клавиш
+            self.main_window.fill(WHITE)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_1:
+                        GameWindow1().run()
+                    elif event.key == pygame.K_2:
+                        GameWindow2().run()
+                    elif event.key == pygame.K_3:
+                        GameWindow3().run()
+
+            self.main_window.blit(self.background_image, (0, 0)) # менюшка с выбором сложности игры
+            pygame.draw.rect(self.main_window, BLACK, (100, 430, 600, 250))
+            font = pygame.font.Font(None, 36)
+
+            text = font.render("1. Легкий ( Поле 10x10, 10 мин )", True, WHITE)
+            self.main_window.blit(text, (150, 450))
+
+            text = font.render("2. Средний ( Поле 15x15, 20 мин )", True, WHITE)
+            self.main_window.blit(text, (150, 500))
+
+            text = font.render("3. Сложный ( Поле 30x30, 100 мин )", True, WHITE)
+            self.main_window.blit(text, (150, 550))
+
+            pygame.display.flip()
 
 
-def main_menu():
-    running = True
-    background_image = pygame.image.load("images/background.jpg").convert()
-    # Размеры и позиция прямоугольника
-    rect_width = 600
-    rect_height = 300
-    while running: # открытие одного из 3-её уровней через нажатие клавиш
-        main_window.fill(WHITE)
+class GameWindow:
+    def __init__(self, level_name):
+        self.game_window = pygame.display.set_mode((800, 600))
+        pygame.display.set_caption(f"Сапёр - {level_name} уровень сложности")
 
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_1:
-                    game1()
-                elif event.key == pygame.K_2:
-                    game2()
-                elif event.key == pygame.K_3:
-                    game3()
-
-        main_window.blit(background_image, (0, 0))
-        pygame.draw.rect(main_window, BLACK, (100, 150, rect_width, rect_height))
-        font = pygame.font.Font(None, 36) # менюшка с выбором сложности игры
-        text = font.render("1. Легко ( Поле 10x10, 10 мин )", True, WHITE)
-        main_window.blit(text, (150, 200))
-
-        text = font.render("2. Средне ( Поле 15x15, 20 мин )", True, WHITE)
-        main_window.blit(text, (150, 250))
-
-        text = font.render("3. Сложный уровень ( Поле 30x30, 100 мин )", True, WHITE)
-        main_window.blit(text, (150, 300))
+    def run(self):
+        running = True
+        while running:
+            self.game_window.fill(WHITE)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+            # код игры
+            pygame.display.flip()
 
 
-        pygame.display.flip()
+class GameWindow1(GameWindow):
+    def __init__(self):
+        super().__init__("1")
 
 
-def game1():
-    game1_window = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-    pygame.display.set_caption("Сапёр - 1 уровень сложности")
-
-    running = True
-
-    while running:
-        game1_window.fill(WHITE)
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-
-        # код
-        pygame.display.flip()
+class GameWindow2(GameWindow):
+    def __init__(self):
+        super().__init__("2")
 
 
-def game2():
-    game2_window = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-    pygame.display.set_caption("Сапёр - 2 уровень сложности")
+class GameWindow3(GameWindow):
+    def __init__(self):
+        super().__init__("3")
 
-    running = True
-
-    while running:
-        game2_window.fill(WHITE)
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-
-        # код
-        pygame.display.flip()
-
-
-def game3():
-    game2_window = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-    pygame.display.set_caption("Сапёр - 3 уровень сложности")
-
-    running = True
-
-    while running:
-        game2_window.fill(WHITE)
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-
-        # код
-        pygame.display.flip()
 
 if __name__ == "__main__":
-    main_menu()
+    main_window = MainWindow()
+    main_window.display_menu()
