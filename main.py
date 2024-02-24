@@ -1,7 +1,7 @@
 import pygame
 
 
-pygame.init()
+pygame.init() # инициализация pygame
 
 # цветовая палитра для удобства в коде
 WHITE = (255, 255, 255)
@@ -10,6 +10,7 @@ GREY = (128, 128, 128)
 BLUE = (0, 0, 245)
 RED = (255, 78, 21)
 GREEN = (77, 255, 77)
+PURPLE = (220, 200, 240)
 
 
 class MainWindow:
@@ -20,7 +21,7 @@ class MainWindow:
 
     def display_menu(self):
         running = True
-        while running: # открытие одного из 3-её уровней через нажатие клавиш
+        while running: # открытие одного из 3-ёх уровней через нажатие клавиш
             self.main_window.fill(WHITE)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -43,23 +44,61 @@ class MainWindow:
             text = font.render("2. Средний ( Поле 15x15, 20 мин )", True, WHITE)
             self.main_window.blit(text, (150, 500))
 
-            text = font.render("3. Сложный ( Поле 30x30, 100 мин )", True, WHITE)
+            text = font.render("3. Сложный ( Поле 25x25, 100 мин )", True, WHITE)
             self.main_window.blit(text, (150, 550))
 
             pygame.display.flip()
 
 
 class GameWindow:
-    def __init__(self, level_name):
+    def __init__(self, level_name, width, height):
         self.game_window = pygame.display.set_mode((800, 600))
         pygame.display.set_caption(f"Сапёр - {level_name} уровень сложности")
+        self.width = width
+        self.height = height
+        self.board = [[0] * width for _ in range(height)]
+        self.cells = [[False] * width for _ in range(height)]
+        self.left = 10
+        self.top = 10
+        self.cell_size = 30
+
+    def set_view(self, left, top, cell_size):
+        self.left = left
+        self.top = top
+        self.cell_size = cell_size
+
+    def render(self, screen):
+        for y in range(self.height):
+            for x in range(self.width):
+                color = (PURPLE) if self.cells[y][x] else (180, 160, 200)  # мягкие оттенки фиолетового
+                rect = pygame.Rect(x * self.cell_size + self.left, y * self.cell_size + self.top, self.cell_size,
+                                   self.cell_size)
+                pygame.draw.rect(screen, color, rect)
+                pygame.draw.rect(screen, (120, 100, 140), rect, 1)  # тонкие линии для разделения клеток
+
+    def on_click(self, cell):
+        x, y = cell
+        self.cells[y][x] = not self.cells[y][x]
+        print(x, y) #
+
+    def get_cell(self, mouse_pos):
+        cell_x = (mouse_pos[0] - self.left) // self.cell_size
+        cell_y = (mouse_pos[1] - self.top) // self.cell_size
+        if cell_x < 0 or cell_x >= self.width or cell_y < 0 or cell_y >= self.height:
+            return None
+        return cell_x, cell_y
+
+    def get_click(self, mouse_pos):
+        cell = self.get_cell(mouse_pos)
+        if cell:
+            self.on_click(cell)
 
     def run(self):
         running = True
         font = pygame.font.Font(None, 36)
         clock = pygame.time.Clock()
         timer_started = False
-        current_time = 0
+        self.current_time = 0
         while running:
             self.game_window.fill(WHITE)
             for event in pygame.event.get():
@@ -67,31 +106,126 @@ class GameWindow:
                     running = False
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if not timer_started:
-                        pygame.time.set_timer(pygame.USEREVENT, 1000)  # Запуск таймера с интервалом в 1 секунду
+                        pygame.time.set_timer(pygame.USEREVENT, 1000)  # запуск таймера с интервалом в 1 секунду
                         timer_started = True
+                    self.get_click(event.pos)  # обработка клика мыши
                 elif event.type == pygame.USEREVENT:
-                    current_time += 1
-            # код игры
+                    self.current_time += 1
 
-            text_surface = font.render(f"Время: {current_time} сек", True, BLACK)
-            self.game_window.blit(text_surface, (600, 20))
+            self.render(self.game_window)  # отрисовка игрового поля
+            self.text_surface = font.render(f"Время: {self.current_time} сек", True, BLACK)
+            self.game_window.blit(self.text_surface, self.text_position)  # отображение текста времени
+            self.game_window.blit(self.text_surface, (600, 20))
             pygame.display.flip()
             clock.tick(60)
 
 
 class GameWindow1(GameWindow):
     def __init__(self):
-        super().__init__("1")
+        super().__init__("1", 10, 10)
+        self.game_window = pygame.display.set_mode((800, 600))
+        self.font = pygame.font.Font(None, 36)
+        self.text_position = (650, 20)
+        self.current_time = 0
+
+    def run(self):
+        running = True
+        clock = pygame.time.Clock()
+        timer_started = False
+
+        while running:
+            self.game_window.fill(WHITE)
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if not timer_started:
+                        pygame.time.set_timer(pygame.USEREVENT, 1000)
+                        timer_started = True
+                    self.get_click(event.pos)
+
+                elif event.type == pygame.USEREVENT:
+                    self.current_time += 1
+
+            text_surface = self.font.render(f"Time: {self.current_time} sec", True, BLACK)
+            self.game_window.blit(text_surface, self.text_position)
+
+            self.render(self.game_window)
+
+            pygame.display.flip()
+            clock.tick(30)
 
 
 class GameWindow2(GameWindow):
     def __init__(self):
-        super().__init__("2")
+        super().__init__("2", 16, 16)
+        self.game_window = pygame.display.set_mode((850, 550))
+        self.text_position = (590, 20)  # новые координаты для отображения текста времени
+        self.current_time = 0
+
+    def run(self):
+        font = pygame.font.Font(None, 36)
+        clock = pygame.time.Clock()
+        timer_started = False
+        while True:
+            self.game_window.fill(WHITE)  # очистка окна
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.display.set_mode((800, 600))  # установка стандартного размера окна для меню
+                    return  # Возврат в меню
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if not timer_started:
+                        pygame.time.set_timer(pygame.USEREVENT, 1000)  # запуск таймера с интервалом в 1 секунду
+                        timer_started = True
+                    self.get_click(event.pos)  # обработка клика мыши
+                elif event.type == pygame.USEREVENT:
+                    self.current_time += 1
+
+            text_surface = font.render(f"Время: {self.current_time} сек", True, BLACK)
+            self.game_window.blit(text_surface, self.text_position)  # отображение текста времени
+            super().render(self.game_window)  # отрисовка игрового поля
+            pygame.display.flip()
+            clock.tick(60)
+
+            if not pygame.display.get_init():  # проверка, что окно не закрыто
+                pygame.display.init()  # Переинициализация окна
 
 
 class GameWindow3(GameWindow):
     def __init__(self):
-        super().__init__("3")
+        super().__init__("3", 26, 26)
+        self.game_window = pygame.display.set_mode((1200, 800))
+        self.text_position = (950, 20)  # новые координаты для отображения текста времени
+        self.current_time = 0
+
+    def run(self):
+        font = pygame.font.Font(None, 36)
+        clock = pygame.time.Clock()
+        timer_started = False
+        while True:
+            self.game_window.fill(WHITE)  # очистка окна
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.display.set_mode((800, 600))  # установка стандартного размера окна для меню
+                    return  # Возврат в меню
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if not timer_started:
+                        pygame.time.set_timer(pygame.USEREVENT, 1000)  # запуск таймера с интервалом в 1 секунду
+                        timer_started = True
+                    self.get_click(event.pos)  # обработка клика мыши
+                elif event.type == pygame.USEREVENT:
+                    self.current_time += 1
+
+            text_surface = font.render(f"Время: {self.current_time} сек", True, BLACK)
+            self.game_window.blit(text_surface, self.text_position)  # отображение текста о времени
+            super().render(self.game_window)  # отрисовка игрового поля
+            pygame.display.flip()
+            clock.tick(60)
+
+            if not pygame.display.get_init():  # проверка, что окно не закрыто
+                pygame.display.init()  # переинициализация окна
+
 
 
 if __name__ == "__main__":
