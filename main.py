@@ -1,4 +1,5 @@
 import pygame
+import random
 
 
 pygame.init() # инициализация pygame
@@ -11,6 +12,8 @@ BLUE = (0, 0, 245)
 RED = (255, 78, 21)
 GREEN = (77, 255, 77)
 PURPLE = (220, 200, 240)
+DARK_PURPLE = (180, 160, 200)
+DEEP_PURPLE = (120, 100, 140)
 
 
 class MainWindow:
@@ -38,7 +41,7 @@ class MainWindow:
             pygame.draw.rect(self.main_window, BLACK, (100, 430, 600, 250))
             font = pygame.font.Font(None, 36)
 
-            text = font.render("1. Легкий ( Поле 10x10, 10 мин )", True, WHITE)
+            text = font.render("1. Легкий ( Поле 9x9, 10 мин )", True, WHITE)
             self.main_window.blit(text, (150, 450))
 
             text = font.render("2. Средний ( Поле 15x15, 20 мин )", True, WHITE)
@@ -61,6 +64,7 @@ class GameWindow:
         self.left = 10
         self.top = 10
         self.cell_size = 30
+        self.mine_positions = self.generate_mine_positions(level_name)
 
     def set_view(self, left, top, cell_size):
         self.left = left
@@ -70,16 +74,32 @@ class GameWindow:
     def render(self, screen):
         for y in range(self.height):
             for x in range(self.width):
-                color = (PURPLE) if self.cells[y][x] else (180, 160, 200)  # мягкие оттенки фиолетового
+                color = (DARK_PURPLE) if not self.cells[y][x] else (PURPLE)  # мягкие оттенки фиолетового
                 rect = pygame.Rect(x * self.cell_size + self.left, y * self.cell_size + self.top, self.cell_size,
                                    self.cell_size)
                 pygame.draw.rect(screen, color, rect)
-                pygame.draw.rect(screen, (120, 100, 140), rect, 1)  # тонкие линии для разделения клеток
+                pygame.draw.rect(screen, (DEEP_PURPLE), rect, 1)  # тонкие линии для разделения клеток
+
+                if isinstance(self.cells[y][x], pygame.Surface):  # Проверяем, что в ячейке есть изображение
+                    screen.blit(self.cells[y][x], (x * self.cell_size + self.left, y * self.cell_size + self.top))
 
     def on_click(self, cell):
         x, y = cell
-        self.cells[y][x] = not self.cells[y][x]
-        print(x, y) #
+        if (x, y) in self.mine_positions:
+            print("Игра окончена")
+            mine_image = pygame.image.load('images/mine.png').convert()
+
+            # Масштабирование изображения под размер клетки
+            mine_image = pygame.transform.scale(mine_image, (self.cell_size, self.cell_size))
+
+            # Вычисление координат для отображения изображения в центре клетки
+            image_x = x * self.cell_size + self.left
+            image_y = y * self.cell_size + self.top
+
+            self.cells[y][x] = mine_image
+        else:
+            self.cells[y][x] = not self.cells[y][x]
+        print(x, y)
 
     def get_cell(self, mouse_pos):
         cell_x = (mouse_pos[0] - self.left) // self.cell_size
@@ -92,6 +112,19 @@ class GameWindow:
         cell = self.get_cell(mouse_pos)
         if cell:
             self.on_click(cell)
+
+    def generate_mine_positions(self, level_name):
+        # Генерация случайных позиций мин в зависимости от уровня сложности
+        if level_name == "1":
+            num_mines = 10
+        elif level_name == "2":
+            num_mines = 20
+        else:
+            num_mines = 100
+
+        mine_positions = random.sample([(x, y) for x in range(self.width) for y in range(self.height)], num_mines)
+        print(mine_positions)
+        return mine_positions
 
     def run(self):
         running = True
@@ -122,10 +155,10 @@ class GameWindow:
 
 class GameWindow1(GameWindow):
     def __init__(self):
-        super().__init__("1", 10, 10)
+        super().__init__("1", 9, 9)
         self.game_window = pygame.display.set_mode((800, 600))
         self.font = pygame.font.Font(None, 36)
-        self.text_position = (650, 20)
+        self.text_position = (500, 20)
         self.current_time = 0
 
     def run(self):
@@ -159,7 +192,7 @@ class GameWindow1(GameWindow):
 
 class GameWindow2(GameWindow):
     def __init__(self):
-        super().__init__("2", 16, 16)
+        super().__init__("2", 15, 15)
         self.game_window = pygame.display.set_mode((850, 550))
         self.text_position = (590, 20)  # новые координаты для отображения текста времени
         self.current_time = 0
@@ -194,7 +227,7 @@ class GameWindow2(GameWindow):
 
 class GameWindow3(GameWindow):
     def __init__(self):
-        super().__init__("3", 26, 26)
+        super().__init__("3", 25, 25)
         self.game_window = pygame.display.set_mode((1200, 800))
         self.text_position = (950, 20)  # новые координаты для отображения текста времени
         self.current_time = 0
