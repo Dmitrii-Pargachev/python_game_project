@@ -1,8 +1,7 @@
 import pygame
 import random
 
-
-pygame.init() # инициализация pygame
+pygame.init()  # инициализация pygame
 
 # цветовая палитра для удобства в коде
 WHITE = (255, 255, 255)
@@ -24,7 +23,7 @@ class MainWindow:
 
     def display_menu(self):
         running = True
-        while running: # открытие одного из 3-ёх уровней через нажатие клавиш
+        while running:  # открытие одного из 3-ёх уровней через нажатие клавиш
             self.main_window.fill(WHITE)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -37,7 +36,7 @@ class MainWindow:
                     elif event.key == pygame.K_3:
                         GameWindow3().run()
 
-            self.main_window.blit(self.background_image, (0, 0)) # менюшка с выбором сложности игры
+            self.main_window.blit(self.background_image, (0, 0))  # менюшка с выбором сложности игры
             pygame.draw.rect(self.main_window, BLACK, (100, 430, 600, 250))
             font = pygame.font.Font(None, 36)
 
@@ -57,6 +56,13 @@ class GameWindow:
     def __init__(self, level_name, width, height):
         self.game_window = pygame.display.set_mode((800, 600))
         pygame.display.set_caption(f"Сапёр - {level_name} уровень сложности")
+        self.button_image = pygame.image.load("images/red_flag.jpg").convert()
+        self.button_image = pygame.transform.scale(self.button_image, (50, 50))  # Изменение размера изображения кнопки
+        self.flag_position = (500, 200)
+        self.text_flag = ''
+        font = pygame.font.Font(None, 36)
+        self.text_flag_position = (self.flag_position[0], self.flag_position[1] + 50)
+        self.button_clicked = False
         self.width = width
         self.height = height
         self.board = [[0] * width for _ in range(height)]
@@ -65,6 +71,7 @@ class GameWindow:
         self.top = 10
         self.cell_size = 30
         self.mine_positions = self.generate_mine_positions(level_name)
+        self.data_kletki = []
 
     def set_view(self, left, top, cell_size):
         self.left = left
@@ -83,6 +90,16 @@ class GameWindow:
                 if isinstance(self.cells[y][x], pygame.Surface):  # Проверяем, что в ячейке есть изображение
                     screen.blit(self.cells[y][x], (x * self.cell_size + self.left, y * self.cell_size + self.top))
 
+        if self.button_clicked:
+            self.text_for_flag = 'активен'
+        else:
+            self.text_for_flag = 'не активен'
+
+        # self.text_flag = font.render(f'Статус флага: {self.text_for_flag}', True, RED)
+        # screen.blit(self.text_flag, (150, 450))
+        screen.blit(self.button_image, self.flag_position)
+        # screen.blit(self.text_flag, self.text_flag_position)
+
     def on_click(self, cell):
         x, y = cell
         if (x, y) in self.mine_positions:
@@ -99,18 +116,40 @@ class GameWindow:
             self.cells[y][x] = mine_image
         else:
             self.cells[y][x] = not self.cells[y][x]
-        print(x, y)
+        self.data_kletki.append(f'({str(x)}, {str(y)})')
+
+        print(x, y, self.data_kletki)
 
     def get_cell(self, mouse_pos):
         cell_x = (mouse_pos[0] - self.left) // self.cell_size
         cell_y = (mouse_pos[1] - self.top) // self.cell_size
+        flag_x = self.flag_position[0]
+        flag_y = self.flag_position[1]
+        if flag_x < mouse_pos[0] < flag_x + 50:
+            if flag_y < mouse_pos[1] < flag_y + 50:
+                print("flag y = ", flag_y)
+                print('flag x = ', flag_x)
+                print(flag_x + 50)
+                print(flag_y + 50)
+                if not self.button_clicked:
+                    self.button_clicked = True
+                else:
+                    self.button_clicked = False
+                print(mouse_pos)
+                print('флаг:', self.button_clicked)
+
         if cell_x < 0 or cell_x >= self.width or cell_y < 0 or cell_y >= self.height:
+            print('нажатие мимо клетки поля')
             return None
         return cell_x, cell_y
 
     def get_click(self, mouse_pos):
         cell = self.get_cell(mouse_pos)
         if cell:
+            # if self.button_rect.collidepoint(mouse_pos):
+            #    self.button_clicked = not self.button_clicked
+            #    print(f"Значение флажка: {self.button_clicked}")
+            # else:
             self.on_click(cell)
 
     def generate_mine_positions(self, level_name):
@@ -128,7 +167,6 @@ class GameWindow:
 
     def run(self):
         running = True
-        font = pygame.font.Font(None, 36)
         clock = pygame.time.Clock()
         timer_started = False
         self.current_time = 0
@@ -146,9 +184,6 @@ class GameWindow:
                     self.current_time += 1
 
             self.render(self.game_window)  # отрисовка игрового поля
-            self.text_surface = font.render(f"Время: {self.current_time} сек", True, BLACK)
-            self.game_window.blit(self.text_surface, self.text_position)  # отображение текста времени
-            self.game_window.blit(self.text_surface, (600, 20))
             pygame.display.flip()
             clock.tick(60)
 
@@ -156,12 +191,15 @@ class GameWindow:
 class GameWindow1(GameWindow):
     def __init__(self):
         super().__init__("1", 9, 9)
-        self.game_window = pygame.display.set_mode((800, 600))
+        self.game_window = pygame.display.set_mode((800, 300))
+        self.flag_position = (550, 60)
         self.font = pygame.font.Font(None, 36)
         self.text_position = (500, 20)
         self.current_time = 0
+        self.text_flag = ''
 
     def run(self):
+        font = pygame.font.Font(None, 36)
         running = True
         clock = pygame.time.Clock()
         timer_started = False
@@ -171,6 +209,7 @@ class GameWindow1(GameWindow):
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
+                    pygame.display.set_mode((800, 600))
                     running = False
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if not timer_started:
@@ -184,20 +223,34 @@ class GameWindow1(GameWindow):
             text_surface = self.font.render(f"Time: {self.current_time} sec", True, BLACK)
             self.game_window.blit(text_surface, self.text_position)
 
+            if self.button_clicked == True:
+                self.text_for_flag = 'активен'
+            else:
+                self.text_for_flag = 'не активен'
+            self.text_flag = font.render(f'Статус флага: {self.text_for_flag}', True, RED)
+            self.game_window.blit(self.text_flag, (425,125))
+
+
             self.render(self.game_window)
 
             pygame.display.flip()
             clock.tick(30)
+
+            if not pygame.display.get_init():  # проверка, что окно не закрыто
+                pygame.display.init()  # Переинициализация окна
 
 
 class GameWindow2(GameWindow):
     def __init__(self):
         super().__init__("2", 15, 15)
         self.game_window = pygame.display.set_mode((850, 550))
+        font = pygame.font.Font(None, 36)
+        self.flag_position = (650, 70)
         self.text_position = (590, 20)  # новые координаты для отображения текста времени
         self.current_time = 0
 
     def run(self):
+
         font = pygame.font.Font(None, 36)
         clock = pygame.time.Clock()
         timer_started = False
@@ -215,6 +268,13 @@ class GameWindow2(GameWindow):
                 elif event.type == pygame.USEREVENT:
                     self.current_time += 1
 
+            if self.button_clicked == True:
+                self.text_for_flag = 'активен'
+            else:
+                self.text_for_flag = 'не активен'
+            self.text_flag = font.render(f'Статус флага: {self.text_for_flag}', True, RED)
+            self.game_window.blit(self.text_flag, (900,500))
+
             text_surface = font.render(f"Время: {self.current_time} сек", True, BLACK)
             self.game_window.blit(text_surface, self.text_position)  # отображение текста времени
             super().render(self.game_window)  # отрисовка игрового поля
@@ -229,8 +289,13 @@ class GameWindow3(GameWindow):
     def __init__(self):
         super().__init__("3", 25, 25)
         self.game_window = pygame.display.set_mode((1200, 800))
-        self.text_position = (950, 20)  # новые координаты для отображения текста времени
+        font = pygame.font.Font(None, 36)
+        self.flag_position = (1000, 70)
+        self.text_flag_position = (1, 1)
+        self.text_position = (950, 20)  # н33овые координаты для отображения текста времени
         self.current_time = 0
+        self.text_for_flag = ''
+        self.button_clicked = False
 
     def run(self):
         font = pygame.font.Font(None, 36)
@@ -252,13 +317,20 @@ class GameWindow3(GameWindow):
 
             text_surface = font.render(f"Время: {self.current_time} сек", True, BLACK)
             self.game_window.blit(text_surface, self.text_position)  # отображение текста о времени
+
+            if self.button_clicked == True:
+                self.text_for_flag = 'активен'
+            else:
+                self.text_for_flag = 'не активен'
+            self.text_flag = font.render(f'Статус флага: {self.text_for_flag}', True, RED)
+            self.game_window.blit(self.text_flag, (1000,100))
+
             super().render(self.game_window)  # отрисовка игрового поля
             pygame.display.flip()
             clock.tick(60)
 
             if not pygame.display.get_init():  # проверка, что окно не закрыто
                 pygame.display.init()  # переинициализация окна
-
 
 
 if __name__ == "__main__":
