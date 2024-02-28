@@ -72,6 +72,8 @@ class GameWindow:
         self.cell_size = 30
         self.mine_positions = self.generate_mine_positions(level_name)
         self.data_kletki = []
+        self.data_flags = []
+        #self.data_free = []
 
     def set_view(self, left, top, cell_size):
         self.left = left
@@ -81,13 +83,13 @@ class GameWindow:
     def render(self, screen):
         for y in range(self.height):
             for x in range(self.width):
-                color = (DARK_PURPLE) if not self.cells[y][x] else (PURPLE)  # мягкие оттенки фиолетового
+                color = DARK_PURPLE if not self.cells[y][x] else PURPLE  # мягкие оттенки фиолетового
                 rect = pygame.Rect(x * self.cell_size + self.left, y * self.cell_size + self.top, self.cell_size,
                                    self.cell_size)
                 pygame.draw.rect(screen, color, rect)
-                pygame.draw.rect(screen, (DEEP_PURPLE), rect, 1)  # тонкие линии для разделения клеток
+                pygame.draw.rect(screen, DEEP_PURPLE, rect, 1)  # тонкие линии для разделения клеток
 
-                if isinstance(self.cells[y][x], pygame.Surface):  # Проверяем, что в ячейке есть изображение
+                if isinstance(self.cells[y][x], pygame.Surface):  # проверяем, что в ячейке есть изображение
                     screen.blit(self.cells[y][x], (x * self.cell_size + self.left, y * self.cell_size + self.top))
 
         if self.button_clicked:
@@ -102,23 +104,52 @@ class GameWindow:
 
     def on_click(self, cell):
         x, y = cell
-        if (x, y) in self.mine_positions:
-            print("Игра окончена")
-            mine_image = pygame.image.load('images/mine.png').convert()
+        flag_image = pygame.image.load('images/red_flag.jpg').convert()
 
-            # Масштабирование изображения под размер клетки
-            mine_image = pygame.transform.scale(mine_image, (self.cell_size, self.cell_size))
+        if not self.button_clicked:  # если флаг не активен
+            if (x, y) in self.mine_positions:  # если нажатие на мину
+                if self.cells[y][x] != flag_image:  # проверка на наличие флага при нажатии на мину
+                    print("Игра окончена")
+                    mine_image = pygame.image.load('images/mine.png').convert()
+                    mine_image = pygame.transform.scale(mine_image, (self.cell_size, self.cell_size))
+                    self.cells[y][x] = mine_image
+                elif self.cells[y][x] == flag_image:
+                    print('NOU !!!!!!!')
+            else:  # если не нажатие на мину
+                self.cells[y][x] = not self.cells[y][x]
+                contains = False
+                a = [x, y]
+                for i in range(len(self.data_kletki)):
+                    if a == self.data_kletki[i]:  # проверка на повторное нажатие для корректного списка
+                        contains = True
+                        break
+                if not contains:
 
-            # Вычисление координат для отображения изображения в центре клетки
-            image_x = x * self.cell_size + self.left
-            image_y = y * self.cell_size + self.top
+                    self.data_kletki.append(a)
+                else:
+                    print('СОДЕРЖИТ УЖЕ')
+        else:  # если флаг активен
+            flag_image = pygame.image.load('images/red_flag.jpg').convert()
+            flag_image = pygame.transform.scale(flag_image, (self.cell_size, self.cell_size))
+            self.cells[y][x] = flag_image
+            self.button_clicked = False
+            contains = False
+            a = [x, y]
+            for i in range(len(self.data_flags)):
+                if a == self.data_flags[i]:  # проверка на повторное нажатие для корректного списка
+                    contains = True
+                    break
+            if not contains:
 
-            self.cells[y][x] = mine_image
-        else:
-            self.cells[y][x] = not self.cells[y][x]
-        self.data_kletki.append(f'({str(x)}, {str(y)})')
+                self.data_flags.append(a)
+            else:
+                print('СОДЕРЖИТ УЖЕ')
+            print('Флажок поставлен', self.data_flags)
 
-        print(x, y, self.data_kletki)
+        print(x, y, self.data_kletki)  # отображение координат клетки и списка нажатых
+
+    def logic(self):
+        pass
 
     def get_cell(self, mouse_pos):
         cell_x = (mouse_pos[0] - self.left) // self.cell_size
@@ -156,13 +187,26 @@ class GameWindow:
         # Генерация случайных позиций мин в зависимости от уровня сложности
         if level_name == "1":
             num_mines = 10
+            x, y = 9, 9
         elif level_name == "2":
             num_mines = 20
+            x, y = 15, 15
         else:
             num_mines = 100
+            x, y = 25, 25
 
-        mine_positions = random.sample([(x, y) for x in range(self.width) for y in range(self.height)], num_mines)
+        mine_positions = random.sample([([x, y]) for x in range(self.width) for y in range(self.height)], num_mines)
         print(mine_positions)
+        self.data_free = []
+        for i in range(x):
+            for j in range(y):
+                a = [i, j]
+                self.data_free.append(a)
+        for pos in mine_positions:
+            if pos in self.data_free:
+                self.data_free.remove(pos)
+        print(self.data_free)
+
         return mine_positions
 
     def run(self):
@@ -273,8 +317,7 @@ class GameWindow2(GameWindow):
             else:
                 self.text_for_flag = 'не активен'
             self.text_flag = font.render(f'Статус флага: {self.text_for_flag}', True, RED)
-            self.game_window.blit(self.text_flag, (900,500))
-
+            self.game_window.blit(self.text_flag, (510, 125))
             text_surface = font.render(f"Время: {self.current_time} сек", True, BLACK)
             self.game_window.blit(text_surface, self.text_position)  # отображение текста времени
             super().render(self.game_window)  # отрисовка игрового поля
@@ -323,7 +366,7 @@ class GameWindow3(GameWindow):
             else:
                 self.text_for_flag = 'не активен'
             self.text_flag = font.render(f'Статус флага: {self.text_for_flag}', True, RED)
-            self.game_window.blit(self.text_flag, (1000,100))
+            self.game_window.blit(self.text_flag, (850,150))
 
             super().render(self.game_window)  # отрисовка игрового поля
             pygame.display.flip()
