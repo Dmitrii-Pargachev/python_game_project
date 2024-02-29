@@ -80,17 +80,22 @@ class GameWindow:
         self.top = top
         self.cell_size = cell_size
 
+
     def render(self, screen):
+        self.screen = screen
         for y in range(self.height):
             for x in range(self.width):
-                color = DARK_PURPLE if not self.cells[y][x] else PURPLE  # мягкие оттенки фиолетового
+                #if not self.cells[y][x]:
+                #else:
+                #   color = PURPLE
+                #color = DARK_PURPLE if not self.cells[y][x] else PURPLE  # мягкие оттенки фиолетового
                 rect = pygame.Rect(x * self.cell_size + self.left, y * self.cell_size + self.top, self.cell_size,
                                    self.cell_size)
-                pygame.draw.rect(screen, color, rect)
-                pygame.draw.rect(screen, DEEP_PURPLE, rect, 1)  # тонкие линии для разделения клеток
+                pygame.draw.rect(self.screen, DARK_PURPLE, rect)
+                pygame.draw.rect(self.screen, DEEP_PURPLE, rect, 1)  # тонкие линии для разделения клеток
 
                 if isinstance(self.cells[y][x], pygame.Surface):  # проверяем, что в ячейке есть изображение
-                    screen.blit(self.cells[y][x], (x * self.cell_size + self.left, y * self.cell_size + self.top))
+                    self.screen.blit(self.cells[y][x], (x * self.cell_size + self.left, y * self.cell_size + self.top))
 
         if self.button_clicked:
             self.text_for_flag = 'активен'
@@ -99,15 +104,19 @@ class GameWindow:
 
         # self.text_flag = font.render(f'Статус флага: {self.text_for_flag}', True, RED)
         # screen.blit(self.text_flag, (150, 450))
-        screen.blit(self.button_image, self.flag_position)
+        self.screen.blit(self.button_image, self.flag_position)
         # screen.blit(self.text_flag, self.text_flag_position)
 
     def on_click(self, cell):
+        print('screeen:', self.screen)
         x, y = cell
+        a = [x, y]
+        cell_surface = pygame.Surface((self.cell_size, self.cell_size))
+        free_image = pygame.image.load('images/noth.png').convert()
+        free_image = pygame.transform.scale(free_image, (self.cell_size, self.cell_size))
         flag_image = pygame.image.load('images/red_flag.jpg').convert()
-
         if not self.button_clicked:  # если флаг не активен
-            if (x, y) in self.mine_positions:  # если нажатие на мину
+            if [x, y] in self.mine_positions:  # если нажатие на мину
                 if self.cells[y][x] != flag_image:  # проверка на наличие флага при нажатии на мину
                     print("Игра окончена")
                     mine_image = pygame.image.load('images/mine.png').convert()
@@ -116,25 +125,23 @@ class GameWindow:
                 elif self.cells[y][x] == flag_image:
                     print('NOU !!!!!!!')
             else:  # если не нажатие на мину
-                self.cells[y][x] = not self.cells[y][x]
+                self.cells[y][x] = free_image
+                pygame.display.flip()
+                self.screen.blit(free_image, (x * self.cell_size + self.left, y * self.cell_size + self.top))
                 contains = False
-                a = [x, y]
                 for i in range(len(self.data_kletki)):
                     if a == self.data_kletki[i]:  # проверка на повторное нажатие для корректного списка
                         contains = True
                         break
                 if not contains:
-
                     self.data_kletki.append(a)
                 else:
                     print('СОДЕРЖИТ УЖЕ')
         else:  # если флаг активен
-            flag_image = pygame.image.load('images/red_flag.jpg').convert()
             flag_image = pygame.transform.scale(flag_image, (self.cell_size, self.cell_size))
             self.cells[y][x] = flag_image
             self.button_clicked = False
             contains = False
-            a = [x, y]
             for i in range(len(self.data_flags)):
                 if a == self.data_flags[i]:  # проверка на повторное нажатие для корректного списка
                     contains = True
@@ -147,9 +154,37 @@ class GameWindow:
             print('Флажок поставлен', self.data_flags)
 
         print(x, y, self.data_kletki)  # отображение координат клетки и списка нажатых
+        self.open_free(a)
+        pygame.display.flip()
 
-    def logic(self):
-        pass
+    def open_free(self, a):
+        print('Работа функции open_free:')
+        print(a[0], a[1])
+        x_analog = a[1] * self.rasm_x + a[0]
+        y_analog = a[0] * self.rasm_y + a[1]
+        #if x_analog - self.rasm_x > 0 and x_analog + self.rasm_x < self.rasm_x * self.rasm_x:
+         #   if y_analog - self.rasm_y > 0 and y_analog + self.rasm_y < self.rasm_y * self.rasm_y:
+        kletka_1 = [(x_analog - self.rasm_x) // self.rasm_x, (y_analog - self.rasm_y) // self.rasm_y]
+        kletka_2 = [(x_analog - self.rasm_x) // self.rasm_x + 1, (y_analog - self.rasm_y) // self.rasm_y]
+        kletka_3 = [(x_analog - self.rasm_x) // self.rasm_x + 2, (y_analog - self.rasm_y) // self.rasm_y]
+        kletka_4 = [(x_analog - self.rasm_x) // self.rasm_x, a[1]]
+        kletka_6 = [(x_analog - self.rasm_x) // self.rasm_x + 2, a[1]]
+        kletka_7 = [(x_analog - self.rasm_x) // self.rasm_x, (y_analog - self.rasm_y) // self.rasm_y + 2]
+        kletka_8 = [(x_analog - self.rasm_x) // self.rasm_x + 1, (y_analog - self.rasm_y) // self.rasm_y + 2]
+        kletka_9 = [(x_analog - self.rasm_x) // self.rasm_x + 2, (y_analog - self.rasm_y) // self.rasm_y + 2]
+        around_kletka = [kletka_1, kletka_2, kletka_3, kletka_4, kletka_6, kletka_7, kletka_8, kletka_9]
+        count = 0
+        for i in range(len(around_kletka)):
+            if around_kletka[i] in self.mine_positions:
+                count += 1
+        print('ЧИСЛО МИН ВОКРУГ КЛЕТКИ',count)
+
+        # координаты клеток вокруг клетки
+        print(kletka_1, kletka_2, kletka_3)
+        print(kletka_4, 0, kletka_6)
+        print(kletka_7, kletka_8, kletka_9)
+        #else:
+
 
     def get_cell(self, mouse_pos):
         cell_x = (mouse_pos[0] - self.left) // self.cell_size
@@ -187,19 +222,19 @@ class GameWindow:
         # Генерация случайных позиций мин в зависимости от уровня сложности
         if level_name == "1":
             num_mines = 10
-            x, y = 9, 9
+            self.rasm_x, self.rasm_y = 9, 9
         elif level_name == "2":
             num_mines = 20
-            x, y = 15, 15
+            self.rasm_x, self.rasm_y = 15, 15
         else:
             num_mines = 100
-            x, y = 25, 25
+            self.rasm_x, self.rasm_y = 25, 25
 
-        mine_positions = random.sample([([x, y]) for x in range(self.width) for y in range(self.height)], num_mines)
+        mine_positions = random.sample([([self.rasm_x, self.rasm_y]) for self.rasm_x in range(self.width) for self.rasm_y in range(self.height)], num_mines)
         print(mine_positions)
         self.data_free = []
-        for i in range(x):
-            for j in range(y):
+        for i in range(self.rasm_x):
+            for j in range(self.rasm_y):
                 a = [i, j]
                 self.data_free.append(a)
         for pos in mine_positions:
